@@ -1,0 +1,16 @@
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), deny (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+6050:6055/tcp              LIMIT IN    Anywhere                  
+8099 on etho0              ALLOW IN    Anywhere                  
+3005                       REJECT IN   Anywhere                  
+172.168.0.100 3005         ALLOW IN    192.168.32.55             
+172.168.0.100 3306         ALLOW IN    172.168.0.100 3000        
+6050:6055/tcp (v6)         LIMIT IN    Anywhere (v6)             
+8099 (v6) on etho0         ALLOW IN    Anywhere (v6)             
+3005 (v6)                  REJECT IN   Anywhere (v6)             
+

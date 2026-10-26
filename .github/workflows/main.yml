@@ -1,0 +1,66 @@
+name: UFW Config Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+    
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install UFW
+        run: |
+          sudo apt-get install ufw -y
+          sudo ufw enable
+
+      - name: Run add-rules.sh
+        run: |
+          sudo bash -e add-rules.sh ufw-config.txt
+ 
+      - name: Verify UFW Config
+        run: |
+          if test -f ufw-config.txt; then
+            # Rule verification '6050:6055/tcp              LIMIT IN    Anywhere'
+            if ! grep -q "6050:6055/tcp\s*LIMIT IN\s*Anywhere" ufw-config.txt; then
+              echo "Rule '6050:6055/tcp              LIMIT IN    Anywhere' not found."
+              exit 1
+            fi
+
+            # Rule verification '8099 on etho0              ALLOW IN    Anywhere'
+            if ! grep -q "8099 on eth0\s*ALLOW IN\s*Anywhere" ufw-config.txt; then
+              echo "Rule '8099 on eth0              ALLOW IN    Anywhere' not found."
+              exit 1
+            fi
+
+            # Rule verification '3005                       REJECT IN   Anywhere'
+            if ! grep -q "3005\s*REJECT IN\s*Anywhere" ufw-config.txt; then
+              echo "Rule '3005                       REJECT IN   Anywhere'not found."
+              exit 1
+            fi
+
+                  echo "All rules from the UFW table have been found."
+          else
+            echo "UFW config file not found."
+            exit 1
+          fi
+
+      - name: Final Step
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          gh repo edit $GITHUB_REPOSITORY --visibility private --accept-visibility-change-consequences
